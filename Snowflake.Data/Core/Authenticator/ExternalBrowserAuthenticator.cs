@@ -147,9 +147,10 @@ namespace Snowflake.Data.Core.Authenticator
 
         private static HttpListener GetHttpListener(int port)
         {
-            string redirectURI = string.Format("http://{0}:{1}/", IPAddress.Loopback, port);
+            string redirectURI = $"http://{IPAddress.Loopback}:{port}/";
             HttpListener listener = new HttpListener();
             listener.Prefixes.Add(redirectURI);
+            listener.Prefixes.Add($"http://localhost:{port}/");
             return listener;
         }
 
@@ -163,8 +164,15 @@ namespace Snowflake.Data.Core.Authenticator
             // hack because of this: https://github.com/dotnet/corefx/issues/10361
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                url = url.Replace("&", "^&");
-                Process.Start(new ProcessStartInfo("cmd", $"/c start {url}") { CreateNoWindow = true });
+                Process.Start(new ProcessStartInfo("cmd", $"/c start {url.Replace("&", "^&")}") { CreateNoWindow = true });
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                Process.Start("xdg-open", url);
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                Process.Start("open", url);
             }
             else
             {
