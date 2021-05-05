@@ -313,5 +313,15 @@ namespace Snowflake.Data.Client
             SetStatement();
             return sfStatement.ExecuteAsync(CommandTimeout, CommandText, convertToBindList(parameterCollection.parameterList), describeOnly, cancellationToken);
         }
+
+        public Task<T> CustomExecute<T>(CancellationToken cancellationToken) where T : class
+        {
+            logger.Debug($"ExecutePutFile, command: {CommandText}");
+            if (cancellationToken.IsCancellationRequested)
+                throw new TaskCanceledException();
+            SetStatement();
+            return sfStatement.CustomExecuteAsync<T>(CommandTimeout, CommandText,
+                convertToBindList(parameterCollection.parameterList), cancellationToken);
+        }
     }
 }

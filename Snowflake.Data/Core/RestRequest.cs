@@ -131,7 +131,7 @@ namespace Snowflake.Data.Core
             // add quote otherwise it would be reported as error format
             string osInfo = "(" + SFEnvironment.ClientEnv.osVersion + ")";
 
-            message.Headers.Accept.Add(applicationSnowflake);
+            message.Headers.Accept.Add(IsCustomQuery?applicationJson:applicationSnowflake);
             message.Headers.UserAgent.Add(new ProductInfoHeaderValue(SFEnvironment.DriverName, SFEnvironment.DriverVersion));
             message.Headers.UserAgent.Add(new ProductInfoHeaderValue(osInfo));
             message.Headers.UserAgent.Add(new ProductInfoHeaderValue(
@@ -140,6 +140,11 @@ namespace Snowflake.Data.Core
 
             return message;
         }
+        
+        private static MediaTypeWithQualityHeaderValue applicationJson =
+            new MediaTypeWithQualityHeaderValue("application/json");
+
+        internal bool IsCustomQuery { get; set; } = false;
     }
 
     class AuthenticatorRequest

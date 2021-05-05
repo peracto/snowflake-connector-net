@@ -307,5 +307,29 @@ namespace Snowflake.Data.Core
             }
         }
         
+        internal async Task<T> CustomExecuteAsync<T>(int timeout, string sql,
+            Dictionary<string, BindingDTO> bindings, CancellationToken cancellationToken) where T : class
+        {
+            registerQueryCancellationCallback(timeout, cancellationToken);
+            var queryRequest = BuildQueryRequest(sql, bindings, false);
+            queryRequest.IsCustomQuery = true;
+            try
+            {
+                while (true)
+                {
+                    var response = await _restRequester.PostAsync<CustomDataResponse<T>>(queryRequest, cancellationToken)
+                        .ConfigureAwait(false);
+                    if (response.code != SF_SESSION_EXPIRED_CODE)
+                        return response.data;
+                    SfSession.renewSession();
+                    queryRequest.authorizationToken =
+                        string.Format(SF_AUTHORIZATION_SNOWFLAKE_FMT, SfSession.sessionToken);
+                }
+            }
+            finally
+            {
+                ClearQueryRequestId();
+            }
+        }
     }
 }
