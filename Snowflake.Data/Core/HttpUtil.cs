@@ -60,17 +60,24 @@ namespace Snowflake.Data.Core
         static private void initHttpClient()
         {
 
-           HttpClientHandler httpHandler = new HttpClientHandler()
+            HttpClientHandler httpHandler = new HttpClientHandler()
             {
                 // Verify no certificates have been revoked
                 CheckCertificateRevocationList = true,
                 // Enforce tls v1.2
                 SslProtocols = SslProtocols.Tls12,
                 AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
-                CookieContainer = cookieContainer = new CookieContainer()
+                CookieContainer = cookieContainer = new CookieContainer(),
+                UseProxy = false,
             };
-
+            httpHandler.ServerCertificateCustomValidationCallback = XX;
              HttpUtil.httpClient = new HttpClient(new RetryHandler(httpHandler));
+        }
+
+        static private bool XX(HttpRequestMessage msg, X509Certificate2 cert, X509Chain chain, SslPolicyErrors policyErrors)
+        {
+            Console.WriteLine($"{msg},{cert},{chain},{policyErrors}");
+            return true;
         }
 
         /// <summary>
@@ -81,7 +88,7 @@ namespace Snowflake.Data.Core
             void apply(NameValueCollection queryParams);
         }
 
-        /// <summary>
+        /// <summary>sql
         /// RetryCoundRule would update the retryCount parameter
         /// </summary>
         class RetryCountRule : IRule
@@ -198,12 +205,13 @@ namespace Snowflake.Data.Core
                             childCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                             childCts.CancelAfter(httpTimeout);
                         }
-
+                        Console.WriteLine("-------------------------------------> SendAsync");
                         response = await base.SendAsync(requestMessage, childCts == null ? 
                             cancellationToken : childCts.Token).ConfigureAwait(false);
                     }
-                    catch(Exception e)
+                    catch (Exception e)
                     {
+                        Console.WriteLine("------------------------------------> ERROR");
                         if (cancellationToken.IsCancellationRequested)
                         {
                             logger.Debug("SF rest request timeout.");
