@@ -8,6 +8,7 @@ using Snowflake.Data.Core;
 using System.Security;
 using System.Threading.Tasks;
 using System.Data;
+using System.Net.Http;
 using System.Threading;
 using Snowflake.Data.Log;
 
@@ -68,6 +69,7 @@ namespace Snowflake.Data.Client
                 return "";
             }
         }
+
 
         public override string ServerVersion => _connectionState == ConnectionState.Open ? SfSession.serverVersion : "";
 
@@ -170,6 +172,30 @@ namespace Snowflake.Data.Client
         ~SnowflakeDbConnection()
         {
             Dispose(false);
+        }
+
+
+        // ReSharper disable once ParameterHidesMember
+        private static HttpClientHandler DefaultHttpClientHandler(HttpClientHandler httpClientHandler)
+        {
+            return httpClientHandler;
+        }
+
+        private static Func<HttpClientHandler, HttpClientHandler> httpClientHandler = null;
+
+        public static Func<HttpClientHandler, HttpClientHandler> HttpClientHandlerDelegate
+        {
+            get
+            {
+                // ReSharper disable once ArrangeAccessorOwnerBody
+                // ReSharper disable once MergeConditionalExpression
+                return httpClientHandler == null ? DefaultHttpClientHandler : httpClientHandler;
+            }
+            set
+            {
+                // ReSharper disable once ArrangeAccessorOwnerBody
+                httpClientHandler = value;
+            }
         }
     }
 }

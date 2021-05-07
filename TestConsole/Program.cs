@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics.Tracing;
+using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
@@ -8,6 +9,7 @@ using Snowflake.Data.Client;
 
 namespace TestConsole
 {
+#if NETCOREAPP
     sealed class EventSourceCreatedListener: EventListener
     {
         protected override void OnEventSourceCreated(EventSource eventSource)
@@ -46,7 +48,7 @@ namespace TestConsole
                 _mb.Append(" - ");
                 _mb.Append(eventData.EventName);
                 _mb.Append(":");
-                _mb.AppendJoin(',', eventData.Payload);
+                 _mb.AppendJoin(',', eventData.Payload);
                 _mb.AppendLine("->");
                 message = _mb.ToString();
                 _mb.Clear();
@@ -55,15 +57,15 @@ namespace TestConsole
         }
 
     }
+
+#endif
+    
     class Program
     {
-
-
-
         static async Task Main(string[] args)
         {
+#if NETCOREAPP
             using var eventSourceListener = new EventSourceCreatedListener();
-            using var httpClient = new HttpClient();
             using var l1 = new EventSourceListener("Microsoft-System-Net-Http");
             using var l2 = new EventSourceListener("Microsoft -System-Net-Sockets");
             using var l3 = new EventSourceListener("Microsoft-System-Net-NameResolution");
@@ -78,13 +80,19 @@ namespace TestConsole
             {
                 Console.WriteLine(s);
             }
+#endif
+
+            SnowflakeDbConnection.HttpClientHandlerDelegate = handler =>
+            {
+                Console.WriteLine($"Handler:{handler}");
+                handler.DefaultProxyCredentials = CredentialCache.DefaultCredentials;
+                return handler;
+            };
 
 
-
-
-
-            var cs = @"";
-            var c = new SnowflakeDbConnection() { ConnectionString = cs};
+            var cs =
+                @"account=xxxx;host=xxxxx.eu-west-1.snowflakecomputing.com;user=xxxxx@xxxx.co.uk;db=demo_db;schema=public;role=sysadmin;authenticator=externalbrowser";
+            var c = new SnowflakeDbConnection() {ConnectionString = cs};
             Console.WriteLine("OPeng");
             await c.OpenAsync();
             Console.WriteLine("OPen");
@@ -93,7 +101,11 @@ namespace TestConsole
             Console.WriteLine("qert");
             var r = await q.ExecuteScalarAsync();
             Console.WriteLine("query {0}", r);
+#if NETCOREAPP
             await c.CloseAsync();
+#else
+            c.Close();
+#endif
         }
     }
 }
